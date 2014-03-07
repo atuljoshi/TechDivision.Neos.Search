@@ -17,18 +17,26 @@ use TYPO3\TYPO3CR\Domain\Model\Node;
 /**
  * @Flow\Scope("singleton")
  */
-class NodeService{
+class NodeService {
 
 	/**
-	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeRepository
+	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
 	 * @Flow\Inject
 	 */
-	protected $nodeRepository;
+	protected $nodeDataRepository;
 
 	/**
 	 * @var array
 	 */
 	protected $settings;
+
+	/**
+	 * The context factory
+	 *
+	 * @Flow\Inject
+	 * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface
+	 */
+	protected $contextFactory;
 
 	/**
 	 * Inject the settings
@@ -49,11 +57,15 @@ class NodeService{
 	 * @return \TYPO3\TYPO3CR\Domain\Model\Node|null
 	 */
 	public function getPageNodeByNodeIdentifier($nodeId, \TYPO3\TYPO3CR\Domain\Model\Workspace $workspace){
-		$node = $this->nodeRepository->findOneByIdentifier($nodeId, $workspace);
-		if($node && $this->checkValidity($node)){
-			$pageNode = $this->getPageNode($node, $workspace);
-			if($pageNode && $this->checkValidity($pageNode)){
-				return $pageNode;
+		$nodeData = $this->nodeDataRepository->findOneByIdentifier($nodeId, $workspace);
+		if ($nodeData !== NULL) {
+			$node = $this->getNodeFromNodeData($nodeData);
+			if($node && $this->checkValidity($node)) {
+				$pageNode = $this->getPageNode($node, $workspace);
+				if($pageNode
+					&& $this->checkValidity($pageNode)){
+					return $pageNode;
+				}
 			}
 		}
 		return null;
@@ -80,18 +92,42 @@ class NodeService{
 	 * Finds recursive the related PageNode, if the given node is a PageNode, this node will returned
 	 *
 	 * @param \TYPO3\TYPO3CR\Domain\Model\Node $node
-	 * @return null|\TYPO3\TYPO3CR\Domain\Model\Node
+	 * @return NULL|\TYPO3\TYPO3CR\Domain\Model\Node
 	 */
-	public function getPageNode(Node $node, $workspace){
+	public function getPageNode(Node $node, $workspace) {
 		if($node->getNodeType()->getName() == $this->settings['ResultNodeType']){
 			return $node;
 		}
-		$parentNode = $this->nodeRepository->findOneByPath($node->getParentPath(), $workspace);
-		if($parentNode){
-			return $this->getPageNode($parentNode, $workspace);
-		}else{
-			return null;
+		$parentNode = $this->nodeDataRepository->findOneByPath($node->getParentPath(), $workspace);
+		if ($parentNode !== NULL) {
+			$node = $this->getNodeFromNodeData($parentNode);
+			if ($node) {
+				return $this->getPageNode($node, $workspace);
+			} else {
+				return NULL;
+			}
 		}
+
+		return NULL;
+	}
+
+	/**
+	 * Get node from node data
+	 *
+	 * @param \TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData An instance of Node data
+	 * @return \TYPO3\TYPO3CR\Domain\Model\Node An instance of Node
+	 */
+	protected function getNodeFromNodeData(\TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData) {
+		$contextFactory = $this->contextFactory->create(
+													array(
+														'workspace' => 'live',
+														'currentDateTime' => new \TYPO3\Flow\Utility\Now(),
+														'invisibleContentShown' => FALSE,
+														'removedContentShown' => FALSE,
+														'inaccessibleContentShown' => FALSE
+													)
+												);
+		return new Node($nodeData, $contextFactory);
 	}
 }
 ?>

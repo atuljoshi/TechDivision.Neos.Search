@@ -58,36 +58,36 @@ class WorkspaceAspect{
 	 * @Flow\After("method(TYPO3\TYPO3CR\Domain\Model\Workspace->publishNodes())")
 	 * @param \TYPO3\Flow\AOP\JoinPointInterface $joinPoint
 	 * @throws \TechDivision\Neos\Search\Exception\UpdatePublishingNodeException
-	 * @return int|null
+	 * @return int|NULL
 	 */
 	public function publishNodes(\TYPO3\Flow\AOP\JoinPointInterface $joinPoint){
-		// only if the provider needs to update it's index
+			// only if the provider needs to update it's index
 		if($this->searchProvider->providerNeedsInputDocuments()){
 			try {
-				// only if the target workspace is same like the configured
-				if($joinPoint->getMethodArgument('targetWorkspaceName') === $this->settings['Workspace']){
-					// get the workspace
+					// only if the target workspace is same like the configured
+				if($joinPoint->getMethodArgument('targetWorkspace')->getName() === $this->settings['Workspace']){
+						// get the workspace
 					$workspace = $this->workspaceRepository->findByName($this->settings['Workspace'])->getFirst();
 					/** @var $nodes array<\TYPO3\TYPO3CR\Domain\Model\NodeInterface> */
 					$nodes = $joinPoint->getMethodArgument('nodes');
 					$updatedNodes = 0;
-					// for each node
+						// for each node
 					foreach($nodes as $node){
-						// create a document from the node
+							// create a document from the node
 						$document = $this->nodeDocumentFactory->createFromNode($node, $workspace);
 						if($document){
-							// update document at searchProvider
+								// update document at searchProvider
 							$this->searchProvider->updateDocument($document);
 							$updatedNodes++;
 						}
 					}
 					return $updatedNodes;
 				}
-			}catch (\Exception $e){
+			} catch (\Exception $e) {
 				throw new \TechDivision\Neos\Search\Exception\UpdatePublishingNodeException();
 			}
 		}
-		return null;
+		return NULL;
 	}
 }
 ?>

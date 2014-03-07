@@ -20,23 +20,36 @@ use TechDivision\Search\Document\Document;
  */
 class NodeDocumentFactory implements \TechDivision\Neos\Search\Factory\DocumentFactoryInterface{
 
-
 	/**
-	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeRepository
+	 * The node data repository
+	 *
 	 * @Flow\Inject
+	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
 	 */
-	protected $nodeRepository;
+	protected $nodeDataRepository;
 
 	/**
-	 * @var \TechDivision\Neos\Search\Service\NodeService
+	 * The node service
+	 *
 	 * @Flow\Inject
+	 * @var \TechDivision\Neos\Search\Service\NodeService
 	 */
 	protected $nodeService;
 
 	/**
+	 * The settings
+	 *
 	 * @var array
 	 */
 	protected $settings;
+
+	/**
+	 * The context factory
+	 *
+	 * @Flow\Inject
+	 * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface
+	 */
+	protected $contextFactory;
 
 	/**
 	 * Inject the settings
@@ -49,6 +62,8 @@ class NodeDocumentFactory implements \TechDivision\Neos\Search\Factory\DocumentF
 	}
 
 	/**
+	 * Create Document from node
+	 *
 	 * @param \TYPO3\TYPO3CR\Domain\Model\Node $node
 	 * @param array $configuration
 	 * @param \TYPO3\TYPO3CR\Domain\Model\Workspace $workspace
@@ -56,12 +71,12 @@ class NodeDocumentFactory implements \TechDivision\Neos\Search\Factory\DocumentF
 	 */
 	public function createFromNode(\TYPO3\TYPO3CR\Domain\Model\Node $node, \TYPO3\TYPO3CR\Domain\Model\Workspace $workspace){
 		$document = new Document();
-		// only if the node is configured
+			// only if the node is configured
 		if(array_key_exists($node->getNodeType()->getName(), $this->settings['Schema']['DocumentTypes']['TYPO3-TYPO3CR-Domain-Model-Node']['NodeTypes'])){
 			$typeConfiguration = $this->settings['Schema']['DocumentTypes']['TYPO3-TYPO3CR-Domain-Model-Node']['NodeTypes'][$node->getNodeType()->getName()];
 			if(array_key_exists('properties', $typeConfiguration) && is_array($typeConfiguration['properties'])){
 				$fieldFactory = new \TechDivision\Neos\Search\Factory\FieldFactory();
-				// iterate over properties
+					// iterate over properties
 				foreach($typeConfiguration['properties'] as $propertyName => $propertyConfiguration){
 					$field = $fieldFactory->createFromNode($propertyConfiguration, $this->settings['Schema']['FieldAliases'], $propertyName, $node);
 					if($field){
@@ -73,14 +88,14 @@ class NodeDocumentFactory implements \TechDivision\Neos\Search\Factory\DocumentF
 				}
 			}
 		}
-		// return document only if at least one field got added
+			// return document only if at least one field got added
 		if($document->getFieldCount() > 0){
-			// add the unique identifier to the document
+				// add the unique identifier to the document
 			$document->addField(new \TechDivision\Search\Field\Field($this->settings['Schema']['DocumentIdentifierField'], $node->getIdentifier()));
 			$document->addField(new \TechDivision\Search\Field\Field($this->settings['Schema']['DocumentTypeField'], 'TYPO3-TYPO3CR-Domain-Model-Node'));
-			//$document->addField(new \TechDivision\Search\Field\Field($configuration['DocumentTypes']['TYPO3-TYPO3CR-Domain-Model-Node']['NodeTypeField'], $node->getNodeType()->getName()));
+				//$document->addField(new \TechDivision\Search\Field\Field($configuration['DocumentTypes']['TYPO3-TYPO3CR-Domain-Model-Node']['NodeTypeField'], $node->getNodeType()->getName()));
 			$document->addField(new \TechDivision\Search\Field\Field($this->settings['Schema']['PageNodeIdentifier'], $this->nodeService->getPageNode($node, $workspace)->getIdentifier()));
-			//var_dump($document);
+				//var_dump($document);
 			return $document;
 		}
 		return null;
@@ -88,14 +103,26 @@ class NodeDocumentFactory implements \TechDivision\Neos\Search\Factory\DocumentF
 
 
 	/**
+	 * Get all Documents
+	 *
 	 * @param \TYPO3\TYPO3CR\Domain\Model\Workspace $workspace
 	 * @return array TechDivision\Search\Document\Document
 	 */
 	public function getAllDocuments(\TYPO3\TYPO3CR\Domain\Model\Workspace $workspace)
 	{
 		$documents = array();
-		$nodes = $this->nodeRepository->findAll();
-		foreach($nodes as $node){
+		$contextFactory = $this->contextFactory->create(
+													array(
+														'workspace' => 'live',
+														'currentDateTime' => new \TYPO3\Flow\Utility\Now(),
+														'invisibleContentShown' => FALSE,
+														'removedContentShown' => FALSE,
+														'inaccessibleContentShown' => FALSE
+													)
+												);
+		$nodes = $this->nodeDataRepository->findAll();
+		foreach($nodes as $nodeData) {
+			$node = new \TYPO3\TYPO3CR\Domain\Model\Node($nodeData, $contextFactory);
 			$document = $this->createFromNode(
 				$node,
 				$workspace

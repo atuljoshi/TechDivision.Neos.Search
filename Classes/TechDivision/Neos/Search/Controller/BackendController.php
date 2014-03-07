@@ -20,7 +20,7 @@ use TYPO3\Flow\Annotations as Flow;
  * coverage is not needed, only TYPO3 Flow functionality here, should be covered by TYPO3 Flow
  * @codeCoverageIgnore
  */
-class BackendController extends \TYPO3\Neos\Controller\Module\StandardController {
+class BackendController extends \TYPO3\Neos\Controller\Module\AbstractModuleController {
 
 
 	/**

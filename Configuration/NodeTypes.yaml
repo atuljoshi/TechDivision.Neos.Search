@@ -1,8 +1,8 @@
 'TechDivision.Neos.Search:FormPlugin':
-  superTypes: ['TYPO3.Neos.NodeTypes:Plugin']
+  superTypes: ['TYPO3.Neos:Plugin']
   ui:
     label: 'TechDivision Neos Search'
-    group: 'Plugins'
+    group: 'plugins'
     icon:
       light: 'Images/Icons/White/zoom_icon-16.png'
       dark: 'Images/Icons/Black/zoom_icon-16.png'

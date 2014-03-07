@@ -22,10 +22,10 @@ use TechDivision\Neos\Search\Domain\Model\Result;
 class NodeResultFactory{
 
 	/**
-	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeRepository
+	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
 	 * @Flow\Inject
 	 */
-	protected $nodeRepository;
+	protected $nodeDataRepository;
 
 	/**
 	 * @var \TechDivision\Neos\Search\Service\NodeService
@@ -64,7 +64,7 @@ class NodeResultFactory{
 				$result = new Result();
 				$result->setPageNode($pageNode);
 				$result->setDocument($document);
-				$result->setNode($this->nodeRepository->findOneByIdentifier($document->getField($this->settings['Schema']['DocumentIdentifierField'])->getValue(), $workspace));
+				$result->setNode($this->nodeDataRepository->findOneByIdentifier($document->getField($this->settings['Schema']['DocumentIdentifierField'])->getValue(), $workspace));
 				return $result;
 			}
 		}
